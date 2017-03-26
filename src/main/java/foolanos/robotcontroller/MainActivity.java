@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
     private float[] mGeomagnetic = null;
 
     // Rotation around the Z axis
-    private double mRotationInDegrees,lastRotation=Integer.MAX_VALUE;
+    private double mRotationInDegrees,lastRotation=Integer.MAX_VALUE,prevRotation=Integer.MAX_VALUE;
 
 
     private TextView angle;
@@ -52,9 +52,11 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
         accelerometer = mSensorManager
                 .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
+
         // Get a reference to the magnetometer
         magnetometer = mSensorManager
                 .getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
 
         // Exit unless both sensors are available
         if (null == accelerometer || null == magnetometer)
@@ -142,9 +144,14 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
 
                 if (lastRotation==Integer.MAX_VALUE){
                     lastRotation = mRotationInDegrees;
+                    prevRotation = mRotationInDegrees;
                 }
 
-                double diff;
+                double diff = (prevRotation-mRotationInDegrees);
+                if (Math.abs(diff)<10)
+                    mRotationInDegrees = mRotationInDegrees+ 0.5*diff;
+                prevRotation=mRotationInDegrees;
+
 
                 if (mRotationInDegrees<90 && lastRotation>270){
                     diff = mRotationInDegrees+360-lastRotation;
@@ -159,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
 
                 if (diff >= 90) {
                     lastRotation=mRotationInDegrees;
-                    vibrator.vibrate(1000);
+                    vibrator.vibrate(500);
                 }
 
 
