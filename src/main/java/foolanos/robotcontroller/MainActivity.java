@@ -1,9 +1,5 @@
 package foolanos.robotcontroller;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -11,9 +7,7 @@ import android.hardware.SensorManager;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity implements  SensorEventListener{
@@ -34,6 +28,8 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
     private TextView angle;
     private Vibrator vibrator;
 
+    private volatile boolean started =false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +44,9 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
 
         // Get a reference to the SensorManager
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        angle.setText("waiting");
+        new Thread(new WaitThread()).start();
 
         // Get a reference to the accelerometer
         accelerometer = mSensorManager
@@ -137,13 +136,28 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
                 float rotationInRadians = orientationMatrix[0];
 
                 // Convert from radians to degrees
-                mRotationInDegrees = Math.toDegrees(rotationInRadians);
+                mRotationInDegrees = Math.toDegrees(rotationInRadians)+180;
+
+                if (!started) return;
+
                 if (lastRotation==Integer.MAX_VALUE){
                     lastRotation = mRotationInDegrees;
                 }
 
-                double diff = Math.abs(mRotationInDegrees-lastRotation);
-                if (diff>=90){
+                double diff;
+
+                if (mRotationInDegrees<90 && lastRotation>270){
+                    diff = mRotationInDegrees+360-lastRotation;
+                }
+                else if (mRotationInDegrees>270 && lastRotation<90){
+                    diff = lastRotation+360-mRotationInDegrees;
+                }
+                else {
+                    diff = Math.abs(mRotationInDegrees-lastRotation);
+                }
+
+
+                if (diff >= 90) {
                     lastRotation=mRotationInDegrees;
                     vibrator.vibrate(1000);
                 }
@@ -160,9 +174,24 @@ public class MainActivity extends AppCompatActivity implements  SensorEventListe
 
     }
 
+
+
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // N/A
+    }
+
+    private class WaitThread implements Runnable{
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(2000);
+                started =true;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
